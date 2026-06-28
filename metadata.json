@@ -1,0 +1,6 @@
+{
+  "name": "Sistem Informasi Nilai Siswa (SINS)",
+  "description": "Sistem Informasi Nilai Siswa (SINS) untuk guru dan siswa dengan dashboard analitik, manajemen data nilai, dan ekspor data.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@media print {
+  /* Hide every element by default */
+  body * {
+    visibility: hidden;
+  }
+  /* Show only the student report card and its children */
+  #student-report-card, #student-report-card *, .print-area, .print-area * {
+    visibility: visible;
+  }
+  /* Position the report card at the top-left of the printed page */
+  #student-report-card, .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  /* Also hide any elements inside the report card with print:hidden */
+  .print\:hidden {
+    display: none !important;
+  }
+}
