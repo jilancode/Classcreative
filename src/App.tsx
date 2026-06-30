@@ -3,6 +3,7 @@ import { initialStudents } from './data/defaultStudents';
 import { Student, AccessLog, SchoolSettings } from './types';
 import SiswaDashboard from './components/SiswaDashboard';
 import GuruDashboard from './components/GuruDashboard';
+import { fetchAllFromSheets, syncAllToSheets } from './services/googleSheetsService';
 import { 
   School, 
   Terminal, 
@@ -54,6 +55,65 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
 
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Helper function to sync with Sheets
+  const syncWithSheetsIfEnabled = async (
+    currStudents: Student[],
+    currSettings: SchoolSettings,
+    currKkm: number,
+    currLogs: AccessLog[]
+  ) => {
+    if (currSettings.sheetsSyncEnabled && currSettings.sheetsWebAppUrl) {
+      try {
+        await syncAllToSheets(currSettings.sheetsWebAppUrl, {
+          students: currStudents,
+          schoolSettings: currSettings,
+          kkm: currKkm,
+          accessLogs: currLogs
+        });
+      } catch (err) {
+        console.error('Gagal sinkronisasi ke Google Sheets:', err);
+      }
+    }
+  };
+
+  const handleLoadFromSheets = async (webAppUrl: string) => {
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      const data = await fetchAllFromSheets(webAppUrl);
+      if (data) {
+        setStudents(data.students);
+        setKkm(data.kkm);
+        setAccessLogs(data.accessLogs);
+        
+        // Merge settings from Sheets with local
+        setSchoolSettings(prev => {
+          const merged = {
+            ...prev,
+            ...data.schoolSettings,
+            sheetsSyncEnabled: true, // preserve local sync settings
+            sheetsWebAppUrl: webAppUrl,
+          };
+          localStorage.setItem('sins_school_settings', JSON.stringify(merged));
+          return merged;
+        });
+
+        // Save to localStorage as backup
+        localStorage.setItem('sins_students', JSON.stringify(data.students));
+        localStorage.setItem('sins_kkm', String(data.kkm));
+        localStorage.setItem('sins_access_logs', JSON.stringify(data.accessLogs));
+      }
+    } catch (err: any) {
+      console.error(err);
+      setSyncError('Gagal mengambil data dari Google Sheets. Menggunakan data lokal (offline).');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Initializing App State from LocalStorage or Default Seed Data
   useEffect(() => {
     const savedStudents = localStorage.getItem('sins_students');
@@ -82,15 +142,29 @@ export default function App() {
       setAppLogo(savedAppLogo);
     }
 
+    let currentSettings: SchoolSettings = {
+      namaSekolah: 'SD Negeri SukaMaju 1',
+      npsn: '20261234',
+      alamatSekolah: 'Jl. Raya Pendidikan No. 45',
+      kecamatan: 'Sukasari',
+      kabupaten: 'Bandung',
+      provinsi: 'Jawa Barat',
+      namaWali: 'Asep Sunandar, S.Pd.',
+      nipWali: '198712122010121001',
+      pangkatWali: 'Penata Muda / IIIa',
+      showRaporCard: true,
+      showBiodataCard: true,
+      showNisnCard: true,
+    };
+
     const savedSchoolSettings = localStorage.getItem('sins_school_settings');
     if (savedSchoolSettings) {
       const parsed = JSON.parse(savedSchoolSettings);
-      setSchoolSettings({
-        showRaporCard: true,
-        showBiodataCard: true,
-        showNisnCard: true,
+      currentSettings = {
+        ...currentSettings,
         ...parsed
-      });
+      };
+      setSchoolSettings(currentSettings);
     }
 
     const savedLogs = localStorage.getItem('sins_access_logs');
@@ -126,6 +200,11 @@ export default function App() {
       localStorage.setItem('sins_access_logs', JSON.stringify(defaultLogs));
       setAccessLogs(defaultLogs);
     }
+
+    // Load from sheets if enabled
+    if (currentSettings.sheetsSyncEnabled && currentSettings.sheetsWebAppUrl) {
+      handleLoadFromSheets(currentSettings.sheetsWebAppUrl);
+    }
   }, []);
 
   const handleAddAccessLog = (name: string, nisn: string, role: 'guru' | 'siswa' | 'tamu', activity: string) => {
@@ -153,6 +232,7 @@ export default function App() {
     setAccessLogs(prev => {
       const updated = [newLog, ...prev].slice(0, 50);
       localStorage.setItem('sins_access_logs', JSON.stringify(updated));
+      syncWithSheetsIfEnabled(students, schoolSettings, kkm, updated);
       return updated;
     });
   };
@@ -160,11 +240,13 @@ export default function App() {
   const handleUpdateStudents = (updated: Student[]) => {
     setStudents(updated);
     localStorage.setItem('sins_students', JSON.stringify(updated));
+    syncWithSheetsIfEnabled(updated, schoolSettings, kkm, accessLogs);
   };
 
   const handleUpdateKkm = (updatedKkm: number) => {
     setKkm(updatedKkm);
     localStorage.setItem('sins_kkm', String(updatedKkm));
+    syncWithSheetsIfEnabled(students, schoolSettings, updatedKkm, accessLogs);
   };
 
   const handleUpdateAppName = (name: string) => {
@@ -180,6 +262,7 @@ export default function App() {
   const handleUpdateSchoolSettings = (updated: SchoolSettings) => {
     setSchoolSettings(updated);
     localStorage.setItem('sins_school_settings', JSON.stringify(updated));
+    syncWithSheetsIfEnabled(students, updated, kkm, accessLogs);
   };
 
   const handleGuruLoginSubmit = (e: React.FormEvent) => {

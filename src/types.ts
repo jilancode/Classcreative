@@ -68,6 +68,8 @@ export interface SchoolSettings {
   showRaporCard?: boolean;
   showBiodataCard?: boolean;
   showNisnCard?: boolean;
+  sheetsSyncEnabled?: boolean;
+  sheetsWebAppUrl?: string;
 }
 
 export interface DashboardStats {

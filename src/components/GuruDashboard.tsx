@@ -2412,13 +2412,56 @@ export default function GuruDashboard({
                         </div>
                       </label>
                     </div>
+
+                    {/* Google Sheets Sync Integration Section */}
+                    <div className="pt-4 border-t border-slate-100 space-y-3.5">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <Terminal className="w-4 h-4 text-emerald-600" /> Integrasi Google Sheets (Real-Time Sync)
+                      </h4>
+                      <p className="text-[10px] text-slate-500">Hubungkan portal ini dengan database Google Sheets Anda menggunakan Web App URL yang diperoleh saat mendeploy script.</p>
+                      
+                      <label className="flex items-center gap-3 p-3 bg-emerald-50/50 hover:bg-emerald-50 rounded-xl border border-emerald-100 cursor-pointer transition-all">
+                        <input
+                          type="checkbox"
+                          checked={!!schoolSettings.sheetsSyncEnabled}
+                          onChange={(e) => {
+                            onUpdateSchoolSettings({
+                              ...schoolSettings,
+                              sheetsSyncEnabled: e.target.checked
+                            });
+                          }}
+                          className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 rounded cursor-pointer"
+                        />
+                        <div className="flex-grow">
+                          <span className="block text-xs font-extrabold text-slate-700 text-emerald-950">Aktifkan Sinkronisasi Otomatis</span>
+                          <span className="block text-[10px] text-emerald-700">Kirim data & log secara otomatis ke spreadsheet.</span>
+                        </div>
+                      </label>
+
+                      {schoolSettings.sheetsSyncEnabled && (
+                        <div className="space-y-2 animate-fade-in">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase">Google Apps Script Web App URL</label>
+                          <input 
+                            type="text" 
+                            value={schoolSettings.sheetsWebAppUrl || ''}
+                            onChange={(e) => onUpdateSchoolSettings({
+                              ...schoolSettings,
+                              sheetsWebAppUrl: e.target.value
+                            })}
+                            placeholder="Contoh: https://script.google.com/macros/s/.../exec"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:bg-white rounded-xl text-xs font-semibold outline-none"
+                          />
+                          <p className="text-[9px] text-slate-400 font-medium">Buka menu <b>Script Code & Deploy Guide</b> untuk menyalin kode Apps Script Anda.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="p-6 border-t border-slate-100">
                 <button 
-                  onClick={() => showToast('success', 'Pengaturan portal berhasil disimpan!')}
+                  onClick={() => showToast('success', 'Pengaturan portal berhasil disimpan dan disinkronkan!')}
                   className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-blue-600/10 cursor-pointer flex items-center justify-center gap-1"
                 >
                   <Save className="w-4 h-4" /> Simpan Pengaturan Portal
