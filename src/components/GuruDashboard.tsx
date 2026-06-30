@@ -84,6 +84,7 @@ export default function GuruDashboard({
 
   // Custom confirmation modal for deletion to handle iframe context cleanly
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'single' | 'batch', student?: Student } | null>(null);
+  const [deleteTargetOption, setDeleteTargetOption] = useState<'only_nilai_s1' | 'only_nilai_s2' | 'only_nilai_both' | 'all'>('all');
 
   // States for handling Excel duplicate entries with a notification & action selection
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
@@ -553,6 +554,17 @@ export default function GuruDashboard({
   };
 
   const triggerDelete = (student: Student) => {
+    if (activeTab === 'nilai') {
+      if (nilaiSemesterTab === 's1') {
+        setDeleteTargetOption('only_nilai_s1');
+      } else if (nilaiSemesterTab === 's2') {
+        setDeleteTargetOption('only_nilai_s2');
+      } else {
+        setDeleteTargetOption('only_nilai_both');
+      }
+    } else {
+      setDeleteTargetOption('all');
+    }
     setDeleteConfirm({ type: 'single', student });
   };
 
@@ -579,6 +591,17 @@ export default function GuruDashboard({
 
   const handleDeleteSelected = () => {
     if (selectedNisns.length === 0) return;
+    if (activeTab === 'nilai') {
+      if (nilaiSemesterTab === 's1') {
+        setDeleteTargetOption('only_nilai_s1');
+      } else if (nilaiSemesterTab === 's2') {
+        setDeleteTargetOption('only_nilai_s2');
+      } else {
+        setDeleteTargetOption('only_nilai_both');
+      }
+    } else {
+      setDeleteTargetOption('all');
+    }
     setDeleteConfirm({ type: 'batch' });
   };
 
@@ -2751,12 +2774,33 @@ export default function GuruDashboard({
                 <table className="w-full text-left border-collapse text-xs">
                   <thead className="sticky top-0 z-10 shadow-sm">
                     <tr className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold border-b border-slate-100 uppercase tracking-wider">
-                      <th className="px-6 py-4">Siswa</th>
-                      <th className="px-4 py-4">No. Induk / NISN</th>
-                      <th className="px-4 py-4">Data Orang Tua</th>
-                      <th className="px-4 py-4">Alamat & KK</th>
+                      <th className="px-6 py-4 text-center">Siswa</th>
+                      <th className="px-4 py-4 text-center">No. Induk / NISN</th>
+                      <th className="px-4 py-4 text-center">Data Orang Tua</th>
+                      <th className="px-4 py-4 text-center">Alamat & KK</th>
                       <th className="px-4 py-4 text-center">Status Konfirmasi</th>
-                      <th className="px-6 py-4 text-center">Aksi / Pilih</th>
+                      <th className="px-6 py-4 text-center select-none">
+                        <div className="flex flex-col items-center justify-center gap-1.5">
+                          <span>Aksi / Pilih</span>
+                          <label className="inline-flex items-center gap-1.5 cursor-pointer font-bold text-[10px] text-blue-100 hover:text-white normal-case">
+                            <input 
+                              type="checkbox"
+                              checked={displayedStudents.length > 0 && displayedStudents.every(s => selectedNisns.includes(s.nisn))}
+                              onChange={() => {
+                                const displayedNisns = displayedStudents.map(s => s.nisn);
+                                const allSelected = displayedNisns.length > 0 && displayedNisns.every(nisn => selectedNisns.includes(nisn));
+                                if (allSelected) {
+                                  setSelectedNisns(prev => prev.filter(nisn => !displayedNisns.includes(nisn)));
+                                } else {
+                                  setSelectedNisns(prev => Array.from(new Set([...prev, ...displayedNisns])));
+                                }
+                              }}
+                              className="rounded border-blue-400 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer bg-white"
+                            />
+                            <span>Pilih Semua</span>
+                          </label>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -3734,35 +3778,114 @@ export default function GuruDashboard({
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden w-full max-w-md p-6 space-y-4">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center gap-3 text-red-600">
               <div className="p-2 bg-red-50 rounded-full">
                 <Trash2 className="w-6 h-6" />
               </div>
               <h3 className="font-extrabold text-base text-slate-800">
-                Konfirmasi Hapus Data
+                Pilihan Tindakan Hapus Data
               </h3>
             </div>
             
             <p className="text-xs text-slate-500 leading-relaxed font-semibold">
               {deleteConfirm.type === 'single' ? (
-                nilaiSemesterTab === 's1' ? (
-                  <span>Apakah Anda yakin ingin menghapus <strong className="text-red-600 font-extrabold">nilai Semester 1</strong> untuk siswa bernama <strong className="text-slate-800 font-extrabold">{deleteConfirm.student?.nama}</strong>? Profil siswa dan nilai Semester 2 tetap aman.</span>
-                ) : nilaiSemesterTab === 's2' ? (
-                  <span>Apakah Anda yakin ingin menghapus <strong className="text-red-600 font-extrabold">nilai Semester 2</strong> untuk siswa bernama <strong className="text-slate-800 font-extrabold">{deleteConfirm.student?.nama}</strong>? Profil siswa and nilai Semester 1 tetap aman.</span>
-                ) : (
-                  <span>Apakah Anda yakin ingin menghapus <strong className="text-red-600 font-extrabold">seluruh profil & seluruh data nilai</strong> siswa bernama <strong className="text-slate-800 font-extrabold">{deleteConfirm.student?.nama}</strong>? Tindakan ini menghapus seluruh data siswa secara permanen.</span>
-                )
+                <span>Apakah Anda yakin ingin menghapus data untuk siswa bernama <strong className="text-slate-800 font-extrabold">{deleteConfirm.student?.nama}</strong>? Silakan tentukan bagian data yang ingin dihapus di bawah ini:</span>
               ) : (
-                nilaiSemesterTab === 's1' ? (
-                  <span>Apakah Anda yakin ingin menghapus <strong className="text-red-600 font-extrabold">nilai Semester 1</strong> untuk <strong className="text-slate-800 font-extrabold">{selectedNisns.length} data siswa</strong> yang terpilih? Profil siswa dan nilai Semester 2 tetap aman.</span>
-                ) : nilaiSemesterTab === 's2' ? (
-                  <span>Apakah Anda yakin ingin menghapus <strong className="text-red-600 font-extrabold">nilai Semester 2</strong> untuk <strong className="text-slate-800 font-extrabold">{selectedNisns.length} data siswa</strong> yang terpilih? Profil siswa dan nilai Semester 1 tetap aman.</span>
-                ) : (
-                  <span>Apakah Anda yakin ingin menghapus <strong className="text-red-600 font-extrabold">seluruh profil & seluruh data nilai</strong> untuk <strong className="text-slate-800 font-extrabold">{selectedNisns.length} data siswa</strong> yang terpilih? Tindakan ini menghapus seluruh data siswa secara permanen.</span>
-                )
+                <span>Apakah Anda yakin ingin menghapus data untuk <strong className="text-slate-800 font-extrabold">{selectedNisns.length} siswa</strong> yang terpilih? Silakan tentukan tindakan penghapusan secara massal di bawah ini:</span>
               )}
             </p>
+
+            {/* Pilihan Tindakan Penghapusan */}
+            <div className="space-y-2.5 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Opsi Penghapusan</span>
+              
+              <div className="grid grid-cols-1 gap-2">
+                {/* Opsi 1: Nilai S1 */}
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetOption('only_nilai_s1')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                    deleteTargetOption === 'only_nilai_s1'
+                      ? 'bg-red-50/70 border-red-200 text-red-950 font-extrabold shadow-sm'
+                      : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 font-semibold'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
+                    deleteTargetOption === 'only_nilai_s1' ? 'border-red-600 bg-red-600' : 'border-slate-300'
+                  }`}>
+                    {deleteTargetOption === 'only_nilai_s1' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <div className="text-xs">
+                    <span className="block font-bold">Hapus Nilai Semester 1 Saja</span>
+                    <span className="block text-[10px] text-slate-400 font-medium">Hanya menghapus rekaman nilai rapor Semester 1. Profil biodata dan foto siswa tetap aman.</span>
+                  </div>
+                </button>
+
+                {/* Opsi 2: Nilai S2 */}
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetOption('only_nilai_s2')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                    deleteTargetOption === 'only_nilai_s2'
+                      ? 'bg-red-50/70 border-red-200 text-red-950 font-extrabold shadow-sm'
+                      : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 font-semibold'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
+                    deleteTargetOption === 'only_nilai_s2' ? 'border-red-600 bg-red-600' : 'border-slate-300'
+                  }`}>
+                    {deleteTargetOption === 'only_nilai_s2' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <div className="text-xs">
+                    <span className="block font-bold">Hapus Nilai Semester 2 Saja</span>
+                    <span className="block text-[10px] text-slate-400 font-medium">Hanya menghapus rekaman nilai rapor Semester 2. Profil biodata dan foto siswa tetap aman.</span>
+                  </div>
+                </button>
+
+                {/* Opsi 3: Nilai S1 & S2 */}
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetOption('only_nilai_both')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                    deleteTargetOption === 'only_nilai_both'
+                      ? 'bg-red-50/70 border-red-200 text-red-950 font-extrabold shadow-sm'
+                      : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 font-semibold'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
+                    deleteTargetOption === 'only_nilai_both' ? 'border-red-600 bg-red-600' : 'border-slate-300'
+                  }`}>
+                    {deleteTargetOption === 'only_nilai_both' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <div className="text-xs">
+                    <span className="block font-bold">Hapus Nilai Kedua Semester (S1 & S2)</span>
+                    <span className="block text-[10px] text-slate-400 font-medium">Menghapus seluruh nilai pelajaran di kedua semester. Profil biodata dan foto siswa tetap aman.</span>
+                  </div>
+                </button>
+
+                {/* Opsi 4: Seluruh Profil & Nilai */}
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetOption('all')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border text-left transition-all ${
+                    deleteTargetOption === 'all'
+                      ? 'bg-rose-50 border-rose-300 text-rose-950 font-extrabold shadow-sm'
+                      : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700 font-semibold'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${
+                    deleteTargetOption === 'all' ? 'border-rose-600 bg-rose-600' : 'border-slate-300'
+                  }`}>
+                    {deleteTargetOption === 'all' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <div className="text-xs">
+                    <span className="block font-bold text-red-600">Hapus Seluruh Data Siswa (Hapus Permanen)</span>
+                    <span className="block text-[10px] text-rose-700 font-bold">Menghapus profil biodata lengkap, kartu keluarga, foto siswa, dan seluruh nilai pelajaran secara total dari sistem.</span>
+                  </div>
+                </button>
+              </div>
+            </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
@@ -3777,7 +3900,7 @@ export default function GuruDashboard({
                 onClick={() => {
                   if (deleteConfirm.type === 'single' && deleteConfirm.student) {
                     const studentToDelete = deleteConfirm.student;
-                    if (nilaiSemesterTab === 's1') {
+                    if (deleteTargetOption === 'only_nilai_s1') {
                       const updated = students.map(s => {
                         if (s.nisn === studentToDelete.nisn) {
                           return {
@@ -3791,7 +3914,7 @@ export default function GuruDashboard({
                       });
                       recalculateAndSaveStudents(updated);
                       showToast('success', `Berhasil menghapus nilai Semester 1 untuk siswa ${studentToDelete.nama}!`);
-                    } else if (nilaiSemesterTab === 's2') {
+                    } else if (deleteTargetOption === 'only_nilai_s2') {
                       const updated = students.map(s => {
                         if (s.nisn === studentToDelete.nisn) {
                           return {
@@ -3805,6 +3928,23 @@ export default function GuruDashboard({
                       });
                       recalculateAndSaveStudents(updated);
                       showToast('success', `Berhasil menghapus nilai Semester 2 untuk siswa ${studentToDelete.nama}!`);
+                    } else if (deleteTargetOption === 'only_nilai_both') {
+                      const updated = students.map(s => {
+                        if (s.nisn === studentToDelete.nisn) {
+                          return {
+                            ...s,
+                            pai: undefined, pkn: undefined, bInd: undefined, mtk: undefined,
+                            ipas: undefined, seni: undefined, pjok: undefined, bIng: undefined,
+                            bSnd: undefined, nilaiAkhir: undefined, ranking: undefined,
+                            pai_s2: undefined, pkn_s2: undefined, bInd_s2: undefined, mtk_s2: undefined,
+                            ipas_s2: undefined, seni_s2: undefined, pjok_s2: undefined, bIng_s2: undefined,
+                            bSnd_s2: undefined, nilaiAkhir_s2: undefined, ranking_s2: undefined
+                          };
+                        }
+                        return s;
+                      });
+                      recalculateAndSaveStudents(updated);
+                      showToast('success', `Berhasil menghapus seluruh nilai Semester 1 & 2 untuk siswa ${studentToDelete.nama}!`);
                     } else {
                       const filtered = students.filter(s => s.nisn !== studentToDelete.nisn);
                       recalculateAndSaveStudents(filtered);
@@ -3812,7 +3952,7 @@ export default function GuruDashboard({
                       setSelectedNisns(prev => prev.filter(n => n !== studentToDelete.nisn));
                     }
                   } else if (deleteConfirm.type === 'batch') {
-                    if (nilaiSemesterTab === 's1') {
+                    if (deleteTargetOption === 'only_nilai_s1') {
                       const updated = students.map(s => {
                         if (selectedNisns.includes(s.nisn)) {
                           return {
@@ -3826,7 +3966,7 @@ export default function GuruDashboard({
                       });
                       recalculateAndSaveStudents(updated);
                       showToast('success', `Berhasil menghapus nilai Semester 1 dari ${selectedNisns.length} siswa terpilih!`);
-                    } else if (nilaiSemesterTab === 's2') {
+                    } else if (deleteTargetOption === 'only_nilai_s2') {
                       const updated = students.map(s => {
                         if (selectedNisns.includes(s.nisn)) {
                           return {
@@ -3840,6 +3980,23 @@ export default function GuruDashboard({
                       });
                       recalculateAndSaveStudents(updated);
                       showToast('success', `Berhasil menghapus nilai Semester 2 dari ${selectedNisns.length} siswa terpilih!`);
+                    } else if (deleteTargetOption === 'only_nilai_both') {
+                      const updated = students.map(s => {
+                        if (selectedNisns.includes(s.nisn)) {
+                          return {
+                            ...s,
+                            pai: undefined, pkn: undefined, bInd: undefined, mtk: undefined,
+                            ipas: undefined, seni: undefined, pjok: undefined, bIng: undefined,
+                            bSnd: undefined, nilaiAkhir: undefined, ranking: undefined,
+                            pai_s2: undefined, pkn_s2: undefined, bInd_s2: undefined, mtk_s2: undefined,
+                            ipas_s2: undefined, seni_s2: undefined, pjok_s2: undefined, bIng_s2: undefined,
+                            bSnd_s2: undefined, nilaiAkhir_s2: undefined, ranking_s2: undefined
+                          };
+                        }
+                        return s;
+                      });
+                      recalculateAndSaveStudents(updated);
+                      showToast('success', `Berhasil menghapus seluruh nilai dari ${selectedNisns.length} siswa terpilih!`);
                     } else {
                       const remaining = students.filter(s => !selectedNisns.includes(s.nisn));
                       recalculateAndSaveStudents(remaining);
@@ -3851,7 +4008,7 @@ export default function GuruDashboard({
                 }}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-red-600/10 cursor-pointer"
               >
-                Hapus Permanen
+                Ya, Konfirmasi Hapus
               </button>
             </div>
           </div>
