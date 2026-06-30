@@ -1288,7 +1288,7 @@ export default function GuruDashboard({
       {/* HEADER UTAMA STATIS (bg-slate-900) */}
       <header className="sticky top-0 z-40 text-white border-b border-slate-800 shadow-md px-6 py-3.5 flex items-center justify-between" style={{ backgroundColor: '#093f41' }}>
         <div className="flex items-center gap-3">
-          <div className="p-1 bg-slate-800 text-white rounded-lg text-sm font-black flex items-center justify-center overflow-hidden border border-slate-700" style={{ width: '50px', height: '50px' }}>
+          <div className="p-1 bg-slate-800 text-white rounded-lg text-sm font-black flex items-center justify-center overflow-hidden border border-slate-700" style={{ width: '50px', height: '50px', borderStyle: 'none', backgroundColor: '#093f41' }}>
             {schoolSettings?.logoSekolah ? (
               <img src={schoolSettings.logoSekolah} alt="Logo Sekolah" className="w-full h-full object-contain" />
             ) : (
@@ -1303,10 +1303,10 @@ export default function GuruDashboard({
 
         {/* Label Admin di Kanan Atas Header */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 pl-2.5 pr-4 py-1.5 rounded-full shadow-sm">
-            <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-[10px] border border-blue-700 flex-shrink-0 overflow-hidden">
+          <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 pl-2.5 pr-4 py-1.5 rounded-full shadow-sm" style={{ borderStyle: 'solid', backgroundColor: '#093f41', borderColor: '#0f8587' }}>
+            <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-[10px] border border-blue-700 flex-shrink-0 overflow-hidden">
               {schoolSettings?.photoWali ? (
-                <img src={schoolSettings.photoWali} alt="Foto Guru" className="w-full h-full object-cover" />
+                <img src={schoolSettings.photoWali} alt="Foto Guru" className="w-full h-full object-cover" style={{ width: '32px', height: '32px' }} />
               ) : (
                 username.charAt(0).toUpperCase()
               )}
